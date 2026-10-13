@@ -1,0 +1,386 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>RODENT Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: two live network panels side by side (classic vs RODENT), shared controls above, scored comparison below. */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --surface2:#eaeef4; --fg:#16202e; --muted:#5d6b7e; --line:#d3dae5;
+  --accent:#0b7a75; --accent-fg:#ffffff;
+  --wifi:#2563d9; --lora:#12915f; --ble:#8b50d4; --alarm:#d5352f; --warn:#b8741a; --good:#12915f; --down:#9aa5b5;
+  --font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e141c; --surface:#161e29; --surface2:#1e2836; --fg:#e6ecf4; --muted:#92a0b4; --line:#2a3646;
+  --accent:#3cc7bd; --accent-fg:#06211f;
+  --wifi:#6c9bff; --lora:#3ccf93; --ble:#b48cf2; --alarm:#ff6a61; --warn:#e5a04a; --good:#3ccf93; --down:#5b687b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e141c; --surface:#161e29; --surface2:#1e2836; --fg:#e6ecf4; --muted:#92a0b4; --line:#2a3646;
+  --accent:#3cc7bd; --accent-fg:#06211f;
+  --wifi:#6c9bff; --lora:#3ccf93; --ble:#b48cf2; --alarm:#ff6a61; --warn:#e5a04a; --good:#3ccf93; --down:#5b687b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.45;padding-inline:16px;padding-block:20px 40px}
+.wrap{max-width:1240px;margin-inline:auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:1.5rem;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:1rem;margin:0}
+p{margin:0}
+.lede{color:var(--muted);max-width:75ch}
+.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.grp{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.grp>.lab{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-right:2px}
+button{font:inherit;color:var(--fg);background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+button[aria-pressed="true"]{background:var(--alarm);border-color:var(--alarm);color:#fff}
+button.fail[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+input[type=range]{accent-color:var(--accent);width:130px}
+select{font:inherit;color:var(--fg);background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+.clock{font-family:var(--mono);font-variant-numeric:tabular-nums;margin-left:auto}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:900px){.cols{grid-template-columns:1fr}}
+.panel{min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;overflow:hidden}
+.ph{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.ph b{font-size:15px}
+.ph span{color:var(--muted);font-size:12.5px}
+.panel.rod .ph{border-top:3px solid var(--accent)}
+.panel.cla .ph{border-top:3px solid var(--muted)}
+svg.net{width:100%;height:auto;display:block;background:var(--surface)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:1px;background:var(--line);border-block:1px solid var(--line)}
+.kpi{background:var(--surface);padding:8px 12px}
+.kpi small{display:block;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em}
+.kpi strong{font-family:var(--mono);font-size:17px;font-weight:500;font-variant-numeric:tabular-nums}
+.sec{padding:10px 14px;border-top:1px solid var(--line);min-width:0}
+.sec h3{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.ebar{display:grid;grid-template-columns:28px 1fr 48px;gap:8px;align-items:center;font-family:var(--mono);font-size:12px;margin-block:3px}
+.ebar .track{height:10px;background:var(--surface2);border-radius:3px;display:flex;overflow:hidden}
+.ebar .track i{display:block;height:100%}
+.ebar .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.log{font-family:var(--mono);font-size:11.5px;height:190px;overflow-y:auto;background:var(--surface2);border-radius:6px;padding:6px 8px;display:flex;flex-direction:column;gap:1px}
+.log div{white-space:normal;overflow-wrap:anywhere}
+.log .t{color:var(--muted)}
+.log .deliver{color:var(--good)} .log .drop{color:var(--alarm)} .log .route{color:var(--accent)} .log .link{color:var(--warn)} .log .gen,.log .tx{color:var(--fg)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend svg{width:30px;height:8px}
+.cmp{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
+td.n{font-family:var(--mono)}
+td.win{color:var(--good);font-weight:600}
+.try{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.try div{background:var(--surface2);border-radius:8px;padding:10px 12px}
+.try b{display:block;margin-bottom:2px}
+.try span{color:var(--muted);font-size:13px}
+svg text{font-family:var(--font)}
+.nodec{fill:var(--surface);stroke:var(--fg);stroke-width:1.5}
+.nodec.alarm{stroke:var(--alarm);stroke-width:3}
+.nodec.dead{stroke:var(--down);stroke-dasharray:3 3;fill:var(--surface2)}
+.nl{font-size:11px;font-weight:600;fill:var(--fg);text-anchor:middle;dominant-baseline:central}
+.rl{font-size:9.5px;fill:var(--muted);text-anchor:middle;font-family:var(--mono)}
+.ax{font-size:9px;fill:var(--muted);font-family:var(--mono)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:6px">
+    <h1>Classic routing vs RODENT, side by side</h1>
+    <p class="lede">The same five FiPy-style sensor nodes, the same traffic and the same failures run through two protocols at once. Left: single-technology shortest path over WiFi. Right: RODENT, which picks a route and a radio per message type. Packet delays, energy and losses are measured live.</p>
+  </header>
+
+  <div class="bar" role="group" aria-label="Simulation controls">
+    <div class="grp"><button id="bPlay" class="primary">Pause</button><button id="bReset">Reset</button></div>
+    <div class="grp"><span class="lab">Speed</span><input id="speed" type="range" min="0.05" max="3" step="0.05" value="0.35" aria-label="Simulation speed"><span id="speedV" style="font-family:var(--mono)">×0.35</span></div>
+    <div class="grp"><span class="lab">Scenario</span>
+      <button data-sc="normal">Normal day</button><button data-sc="frost">Frost alarm at N5</button><button data-sc="outage">WiFi base outage</button></div>
+    <div class="grp" id="alarmChips"><span class="lab">Alarm on</span></div>
+    <div class="grp" id="failChips"><span class="lab">Break</span></div>
+    <span class="clock" id="clock">t = 0.0 s</span>
+  </div>
+
+  <div class="legend" aria-label="Legend">
+    <span><svg viewBox="0 0 30 8"><line x1="0" y1="4" x2="30" y2="4" stroke="var(--wifi)" stroke-width="3"/></svg>WiFi: fast, 60-140 energy/packet</span>
+    <span><svg viewBox="0 0 30 8"><line x1="0" y1="4" x2="30" y2="4" stroke="var(--lora)" stroke-width="3" stroke-dasharray="8 4"/></svg>LoRa: slow (~250 ms), 15 energy</span>
+    <span><svg viewBox="0 0 30 8"><line x1="0" y1="4" x2="30" y2="4" stroke="var(--ble)" stroke-width="3" stroke-dasharray="2 4"/></svg>BLE: short range, 5 energy</span>
+    <span><svg viewBox="0 0 12 12" width="12"><circle cx="6" cy="6" r="4.5" fill="var(--fg)" stroke="var(--alarm)" stroke-width="2"/></svg>alarm message</span>
+    <span><svg viewBox="0 0 12 12" width="12"><circle cx="6" cy="6" r="3" fill="none" stroke="var(--fg)"/></svg>RODENT control beacon</span>
+    <span>Click a node to toggle its alarm mode (the FiPy button).</span>
+  </div>
+
+  <div class="cols" id="cols"></div>
+
+  <section class="cmp" aria-labelledby="cmpH">
+    <h2 id="cmpH">Scoreboard</h2>
+    <div class="tw"><table id="cmpT"></table></div>
+  </section>
+
+  <section class="cmp" aria-labelledby="tryH">
+    <h2 id="tryH">What to try with the class</h2>
+    <div class="try">
+      <div><b>1. Compare the energy bars</b><span>Run "Normal day" for a minute. Surveillance data goes over LoRa or BLE in RODENT, so the nodes spend far less energy than on WiFi.</span></div>
+      <div><b>2. Turn on an alarm at N4</b><span>RODENT switches that node to WiFi for alarm messages, so alarm delay drops to WiFi level while surveillance stays cheap.</span></div>
+      <div><b>3. Look at N5</b><span>N5 has no WiFi. The classic protocol cannot reach it at all. RODENT relays through N4 and picks WiFi or LoRa beyond N4 per message type.</span></div>
+      <div><b>4. Break the WiFi base</b><span>The classic network goes silent. RODENT detects the dead link, drops the routes and moves everything to LoRa.</span></div>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+/* ---------- topology (after fig. 5.4 of the thesis) ---------- */
+const NODEDEF={
+  SW:{x:455,y:70,base:true,label:'WiFi BS'}, SL:{x:455,y:250,base:true,label:'LoRa BS'},
+  N1:{x:262,y:90,label:'N1'}, N2:{x:300,y:162,label:'N2'}, N3:{x:84,y:90,label:'N3'},
+  N4:{x:262,y:250,label:'N4'}, N5:{x:84,y:250,label:'N5'}
+};
+const NODES=['N1','N2','N3','N4','N5'];
+/* e = energy per packet, m = monetary cost, r = rate (1 byte), d = airtime ms, loss = packet loss */
+const LINKS=[
+  {id:'L1',a:'N1',b:'SW',t:'wifi',e:60, m:5,r:200,d:15, loss:.04},
+  {id:'L2',a:'N2',b:'SW',t:'wifi',e:60, m:5,r:200,d:15, loss:.04},
+  {id:'L3',a:'N2',b:'SL',t:'lora',e:15, m:1,r:20, d:250,loss:.08},
+  {id:'L4',a:'N3',b:'SW',t:'wifi',e:140,m:5,r:120,d:30, loss:.12,ctl:[270,2]},  /* weak WiFi link: many retries */
+  {id:'L5',a:'N3',b:'N1',t:'ble', e:5,  m:0,r:60, d:40, loss:.03},
+  {id:'L6',a:'N4',b:'SW',t:'wifi',e:60, m:5,r:200,d:15, loss:.04},
+  {id:'L7',a:'N4',b:'SL',t:'lora',e:15, m:1,r:20, d:250,loss:.08},
+  {id:'L8',a:'N5',b:'N4',t:'lora',e:15, m:1,r:20, d:250,loss:.08}
+];
+const TN={wifi:'WiFi',lora:'LoRa',ble:'BLE'};
+const isBase=n=>NODEDEF[n]&&NODEDEF[n].base;
+const other=(l,n)=>l.a===n?l.b:(l.b===n?l.a:null);
+/* ---------- RODENT decision: TOPSIS with bounded normalisation (thesis ch. 4) ---------- */
+const BOUNDS=[[10,false],[1,false],[255,true],[1,false]];   /* energy, money, rate, hops */
+const RVW={surv:[.6,.3,.1,0], alarm:[.1,.1,.8,0]};
+function score(m,w){let sp=0,sm=0;
+  for(let j=0;j<4;j++){let x=m[j]>0?m[j]:1;const [b,asc]=BOUNDS[j];let r=asc?x/b:b/x;if(r>1)r=1;const v=w[j]*r;sp+=(w[j]-v)**2;sm+=v*v}
+  sp=Math.sqrt(sp);sm=Math.sqrt(sm);return sp+sm?sm/(sp+sm):0}
+const addM=(r,l)=>[Math.min(255,r[0]+l.e),Math.min(255,r[1]+l.m),Math.min(r[2],l.r),Math.min(255,r[3]+1)];
+const MAXH=6,TTL=14000,BEACON=5000,SURV_P=2500,ALARM_P=1200,DETECT=2000,RELAY_MS=2;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ---------- one simulated network ---------- */
+class Sim{
+  constructor(kind){this.kind=kind;this.reset()}
+  reset(){
+    this.t=0;this.ev=[];this.rng=mulberry32(7);this.log=[];this.logV=0;this.fl=[];this.mid=0;
+    this.down={};this.alarm={};this.dead=new Set();
+    this.st={surv:{sent:0,ok:0,drop:0,dsum:0},alarm:{sent:0,ok:0,drop:0,dsum:0}};
+    this.en={};this.byNode={};this.use={wifi:0,lora:0,ble:0};this.pts=[];this.next={};this.ctrlN=0;
+    this.nodes={};
+    for(const n of NODES){this.en[n]={wifi:0,lora:0,ble:0,ctrl:0};this.byNode[n]={sent:0,ok:0};
+      this.nodes[n]={RM:{surv:new Map(),alarm:new Map()},best:{},key:{}}}
+    if(this.kind==='classic')this.computeNext(); else for(const n of NODES){this.select(n,'surv');this.select(n,'alarm')}
+    NODES.forEach((n,i)=>{
+      this.every(SURV_P,300+i*430,()=>this.gen(n,'surv'));
+      this.every(ALARM_P,150+i*210,()=>{if(this.alarm[n])this.gen(n,'alarm')});
+      if(this.kind==='rodent')this.every(BEACON,200+i*260,()=>this.beacons(n));
+    });
+    if(this.kind==='rodent')this.every(250,100,()=>NODES.forEach(n=>{this.select(n,'surv');this.select(n,'alarm')}));
+  }
+  /* scheduler */
+  at(dt,fn){const e={t:this.t+dt,fn};let i=this.ev.length;while(i>0&&this.ev[i-1].t>e.t)i--;this.ev.splice(i,0,e)}
+  every(p,off,fn){const f=()=>{fn();this.at(p,f)};this.at(off,f)}
+  step(ms){const T=this.t+ms;while(this.ev.length&&this.ev[0].t<=T){const e=this.ev.shift();this.t=e.t;e.fn()}this.t=T;
+    this.fl=this.fl.filter(f=>f.t1+350>this.t)}
+  addLog(cls,txt){this.log.push({t:this.t,cls,txt});if(this.log.length>80)this.log.shift();this.logV++}
+  linkUp(l){return !(this.down[l.a]||this.down[l.b])}
+  /* failures: physical effect is immediate, nodes only notice after DETECT ms (link-layer assumption of the thesis) */
+  setDown(ent,v){this.down[ent]=v;this.addLog('link',`${ent} ${v?'goes DOWN':'is back UP'}`);
+    this.at(DETECT,()=>{const nd=new Set();LINKS.forEach(l=>{if(!this.linkUp(l))nd.add(l.id)});this.dead=nd;
+      this.addLog('link','link layer updated: '+(nd.size?[...nd].join(' '):'all links up'));
+      if(this.kind==='classic')this.computeNext()})}
+  /* classic: BFS over WiFi links to the WiFi base station */
+  computeNext(){const nx={};const q=['SW'],seen=new Set(['SW']);
+    while(q.length){const c=q.shift();for(const l of LINKS){if(l.t!=='wifi'||this.dead.has(l.id))continue;const o=other(l,c);if(o&&!seen.has(o)){seen.add(o);nx[o]=c;q.push(o)}}}
+    this.next=nx}
+  /* RODENT route matrix + bounded TOPSIS */
+  cands(nid,rv){const out=[];
+    for(const l of LINKS){if(this.dead.has(l.id))continue;const o=other(l,nid);if(o&&isBase(o))out.push({via:o,tech:l.t,m:[l.e,l.m,l.r,1],link:l})}
+    for(const e of this.nodes[nid].RM[rv].values())if(e.exp>this.t&&!this.dead.has(e.link.id))out.push(e);
+    return out}
+  select(nid,rv){let best=null,bs=-1;
+    for(const c of this.cands(nid,rv)){if(c.m[3]>MAXH)continue;const s=score(c.m,RVW[rv]);if(s>bs){best=c;bs=s}}
+    const nd=this.nodes[nid];const key=best?best.via+'|'+best.tech:'-';
+    if(nd.key[rv]!==key){const old=nd.key[rv];nd.key[rv]=key;
+      if(old!==undefined)this.addLog('route',`${nid} ${rv==='alarm'?'alarm':'surv.'} route: ${best?routeTxt(best):'none'}`)}
+    nd.best[rv]=best;return best}
+  hear(nid,pkt,link){
+    if(this.kind!=='rodent'||this.dead.has(link.id)||isBase(pkt.src)||pkt.dst===nid||pkt.route[3]>=MAXH)return;
+    this.nodes[nid].RM[pkt.rv].set(pkt.src+'|'+pkt.tech,{via:pkt.src,tech:pkt.tech,m:addM(pkt.route,link),exp:this.t+TTL,link})}
+  /* traffic */
+  gen(nid,rv){if(this.down[nid])return;
+    const pkt={mid:++this.mid,origin:nid,rv,t0:this.t,hops:0,energy:0};
+    this.st[rv].sent++;this.byNode[nid].sent++;this.addLog('gen',`${nid} creates #${pkt.mid} (${rv==='alarm'?'ALARM':'surveillance'})`);
+    this.send(nid,pkt)}
+  send(nid,pkt){
+    if(this.kind==='classic'){
+      const nx=this.next[nid];if(nx==null){this.drop(pkt,nid,'no route: no WiFi path to a base');return}
+      const link=LINKS.find(l=>l.t==='wifi'&&((l.a===nid&&l.b===nx)||(l.b===nid&&l.a===nx)));
+      this.xmit(nid,{...pkt,src:nid,dst:nx,tech:'wifi',route:[0,0,0,0]},link);return}
+    const b=this.select(nid,pkt.rv);if(!b){this.drop(pkt,nid,'no route');return}
+    this.xmit(nid,{...pkt,src:nid,dst:b.via,tech:b.tech,route:b.m},b.link)}
+  xmit(nid,out,link){
+    this.en[nid][out.tech]+=link.e;this.use[out.tech]++;out.energy+=link.e;out.hops++;
+    const lost=!this.linkUp(link)||this.rng()<link.loss;const dly=link.d*(.9+.2*this.rng())+2;
+    this.fl.push({a:nid,b:out.dst,link,t0:this.t,t1:this.t+dly,ok:!lost,ctrl:false,rv:out.rv});
+    this.addLog('tx',`${nid}→${out.dst} #${out.mid} via ${TN[out.tech]} (${dly.toFixed(0)} ms)${lost?'  ✗ lost':''}`);
+    this.at(dly,()=>{if(lost){this.drop(out,nid,'lost on '+TN[out.tech]+' link');return}this.arrive(out.dst,out,link)});
+    for(const l2 of LINKS){if(l2===link||l2.t!==out.tech)continue;const o=other(l2,nid);
+      if(!o||isBase(o)||o===out.dst||!this.linkUp(l2)||this.rng()<l2.loss)continue;this.at(l2.d,()=>this.hear(o,out,l2))}}
+  arrive(nid,pkt,link){
+    if(isBase(nid)){const d=this.t-pkt.t0;const s=this.st[pkt.rv];s.ok++;s.dsum+=d;this.byNode[pkt.origin].ok++;
+      this.pts.push({t:this.t,d,rv:pkt.rv});if(this.pts.length>400)this.pts.shift();
+      this.addLog('deliver',`${nid==='SW'?'WiFi BS':'LoRa BS'} ✓ #${pkt.mid} from ${pkt.origin} · ${d.toFixed(0)} ms · ${pkt.hops} hop${pkt.hops>1?'s':''} · ${pkt.energy} energy`);return}
+    this.hear(nid,pkt,link);
+    this.at(RELAY_MS,()=>{if(this.down[nid]){this.drop(pkt,nid,'relay is down');return}this.addLog('route',`${nid} relays #${pkt.mid}`);this.send(nid,pkt)})}
+  drop(pkt,nid,why){if(pkt.ctrl)return;this.st[pkt.rv].drop++;this.addLog('drop',`#${pkt.mid} (${pkt.origin}) dropped at ${nid}: ${why}`)}
+  /* RODENT control beacons: empty-data packets that advertise best routes on every shared technology */
+  beacons(nid){if(this.down[nid])return;
+    for(const rv of ['surv','alarm']){const b=this.select(nid,rv);if(!b)continue;
+      const done=new Set();
+      for(const l of LINKS){const o=other(l,nid);if(!o||isBase(o)||done.has(l.t))continue;done.add(l.t);
+        this.en[nid].ctrl+=l.e*.6;this.ctrlN++;
+        for(const l2 of LINKS){if(l2.t!==l.t)continue;const o2=other(l2,nid);if(!o2||isBase(o2)||!this.linkUp(l2))continue;
+          const lost=this.rng()<l2.loss;
+          this.fl.push({a:nid,b:o2,link:l2,t0:this.t,t1:this.t+l2.d,ok:!lost,ctrl:true,rv});
+          if(!lost){const pkt={src:nid,dst:b.via,rv,tech:l.t,route:b.m,ctrl:true};this.at(l2.d,()=>this.hear(o2,pkt,l2))}}}}}
+}
+function routeTxt(b){return isBase(b.via)?TN[b.tech]+' → '+(b.via==='SW'?'WiFi BS':'LoRa BS'):TN[b.tech]+' → '+b.via}
+
+/* ---------- UI ---------- */
+const sims={classic:new Sim('classic'),rodent:new Sim('rodent')};
+window.__sims=sims;
+const $=(s,r=document)=>r.querySelector(s);
+const SVGNS='http://www.w3.org/2000/svg';
+const colorOf=t=>`var(--${t})`;
+const dash={wifi:'',lora:'9 5',ble:'2 5'};
+function linkPath(l){const A=NODEDEF[l.a],B=NODEDEF[l.b];return l.ctl?`M${A.x},${A.y} Q${l.ctl[0]},${l.ctl[1]} ${B.x},${B.y}`:`M${A.x},${A.y} L${B.x},${B.y}`}
+function linkPt(l,p){const A=NODEDEF[l.a],B=NODEDEF[l.b];if(l.ctl){const q=1-p;return[q*q*A.x+2*q*p*l.ctl[0]+p*p*B.x,q*q*A.y+2*q*p*l.ctl[1]+p*p*B.y]}return[A.x+(B.x-A.x)*p,A.y+(B.y-A.y)*p]}
+
+function panelHTML(key,cls,title,sub){
+  const links=LINKS.map(l=>`<path id="${key}-${l.id}" d="${linkPath(l)}" fill="none" stroke="${colorOf(l.t)}" stroke-width="3" stroke-dasharray="${dash[l.t]}" stroke-linecap="round"/>`).join('');
+  const marks=LINKS.map(l=>{const [x,y]=linkPt(l,.5);return `<text id="${key}-x${l.id}" x="${x}" y="${y}" fill="var(--alarm)" font-size="18" font-weight="700" text-anchor="middle" dominant-baseline="central" visibility="hidden">✕</text>`}).join('');
+  const nodes=Object.entries(NODEDEF).map(([id,n])=>n.base
+    ?`<g><rect id="${key}-n${id}" class="nodec" x="${n.x-30}" y="${n.y-15}" width="60" height="30" rx="6"/><text class="nl" x="${n.x}" y="${n.y}">${n.label}</text></g>`
+    :`<g style="cursor:pointer" data-node="${id}" role="button" tabindex="0" aria-label="Toggle alarm on ${id}"><circle id="${key}-n${id}" class="nodec" cx="${n.x}" cy="${n.y}" r="17"/><text class="nl" x="${n.x}" y="${n.y}">${id}</text><text id="${key}-r${id}" class="rl" x="${n.x}" y="${n.y+31}"></text></g>`).join('');
+  return `<section class="panel ${cls}" id="p-${key}" aria-label="${title}">
+  <div class="ph"><b>${title}</b><span>${sub}</span></div>
+  <svg class="net" viewBox="0 0 520 300" role="img" aria-label="Network topology with live packets">${links}${marks}<g id="${key}-fl"></g>${nodes}</svg>
+  <div class="kpis">
+    <div class="kpi"><small>Delivered</small><strong id="${key}-k1">–</strong></div>
+    <div class="kpi"><small>Surveillance delay</small><strong id="${key}-k2">–</strong></div>
+    <div class="kpi"><small>Alarm delay</small><strong id="${key}-k3">–</strong></div>
+    <div class="kpi"><small>Total energy</small><strong id="${key}-k4">0</strong></div>
+  </div>
+  <div class="sec"><h3>Energy per node <span style="text-transform:none;letter-spacing:0"><b style="color:var(--wifi)">■</b> WiFi <b style="color:var(--lora)">■</b> LoRa <b style="color:var(--ble)">■</b> BLE <b style="color:var(--muted)">■</b> control</span></h3><div id="${key}-en"></div></div>
+  <div class="sec"><h3>Delay of each delivered message <span style="text-transform:none;letter-spacing:0">ms · last 60 s · <b style="color:var(--alarm)">●</b> alarm <b style="color:var(--muted)">●</b> surveillance</span></h3><svg id="${key}-ch" viewBox="0 0 480 120" style="width:100%;height:auto;display:block"></svg></div>
+  <div class="sec"><h3>Message log <select id="${key}-lf" aria-label="Log filter"><option value="all">all events</option><option value="key" selected>deliveries, drops, routes, links</option><option value="route">routes and links only</option></select></h3><div class="log" id="${key}-log" role="log"></div></div>
+  </section>`}
+$('#cols').innerHTML=
+  panelHTML('classic','cla','Classic: single technology, shortest path','Every node uses WiFi and the fewest hops. No notion of message type, energy or alternative radios.')+
+  panelHTML('rodent','rod','RODENT: multi-technology, per-message routing','Each node ranks routes with bounded TOPSIS and picks one route per use case: surveillance (cheap) or alarm (fast).');
+['classic','rodent'].forEach(k=>{
+  $('#'+k+'-en').innerHTML=NODES.map(n=>`<div class="ebar"><span>${n}</span><div class="track" id="${k}-eb${n}"></div><span class="v" id="${k}-ev${n}">0</span></div>`).join('')});
+
+/* controls */
+const alarmChips=$('#alarmChips'),failChips=$('#failChips');
+NODES.forEach(n=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed','false');b.id='ac-'+n;b.onclick=()=>toggleAlarm(n);alarmChips.appendChild(b)});
+[['SW','WiFi base'],['SL','LoRa base'],['N4','Node N4']].forEach(([e,t])=>{const b=document.createElement('button');b.textContent=t;b.className='fail';b.setAttribute('aria-pressed','false');b.id='fc-'+e;b.onclick=()=>toggleFail(e);failChips.appendChild(b)});
+function toggleAlarm(n,v){const nv=v===undefined?!sims.classic.alarm[n]:v;for(const s of Object.values(sims)){s.alarm[n]=nv;s.addLog('gen',`${n} alarm mode ${nv?'ON':'off'}`)}$('#ac-'+n).setAttribute('aria-pressed',nv)}
+function toggleFail(e,v){const nv=v===undefined?!sims.classic.down[e]:v;for(const s of Object.values(sims))s.setDown(e,nv);$('#fc-'+e).setAttribute('aria-pressed',nv)}
+document.addEventListener('click',ev=>{const g=ev.target.closest('[data-node]');if(g)toggleAlarm(g.dataset.node)});
+document.addEventListener('keydown',ev=>{if((ev.key==='Enter'||ev.key===' ')&&ev.target.dataset&&ev.target.dataset.node){ev.preventDefault();toggleAlarm(ev.target.dataset.node)}});
+let running=true,speed=.35;
+$('#bPlay').onclick=()=>{running=!running;$('#bPlay').textContent=running?'Pause':'Play'};
+$('#speed').oninput=e=>{speed=+e.target.value;$('#speedV').textContent='×'+speed.toFixed(2)};
+function resetAll(){for(const s of Object.values(sims))s.reset();NODES.forEach(n=>$('#ac-'+n).setAttribute('aria-pressed','false'));['SW','SL','N4'].forEach(e=>$('#fc-'+e).setAttribute('aria-pressed','false'));lastLogV={}}
+$('#bReset').onclick=resetAll;
+document.querySelectorAll('[data-sc]').forEach(b=>b.onclick=()=>{resetAll();const sc=b.dataset.sc;
+  const both=(ms,fn)=>{for(const s of Object.values(sims))s.at(ms,()=>fn(s))};
+  if(sc==='frost'){both(10000,()=>toggleAlarmQuiet('N5',true));both(35000,()=>toggleAlarmQuiet('N5',false))}
+  if(sc==='outage'){scheduleFail('SW',20000,50000)}
+  if(!running){running=true;$('#bPlay').textContent='Pause'}});
+function toggleAlarmQuiet(n,v){for(const s of Object.values(sims))s.alarm[n]=v;$('#ac-'+n).setAttribute('aria-pressed',v)}
+function scheduleFail(e,t0,t1){for(const s of Object.values(sims)){s.at(t0,()=>{s.setDown(e,true);$('#fc-'+e).setAttribute('aria-pressed',true)});s.at(t1,()=>{s.setDown(e,false);$('#fc-'+e).setAttribute('aria-pressed',false)})}}
+
+/* rendering */
+const fmt=(v,u='')=>v==null?'–':v.toFixed(0)+u;
+function stats(s){const a=s.st.surv,b=s.st.alarm;const ok=a.ok+b.ok,dr=a.drop+b.drop;
+  let en=0,ctrl=0;for(const n of NODES){const e=s.en[n];en+=e.wifi+e.lora+e.ble+e.ctrl;ctrl+=e.ctrl}
+  return{ok,dr,pdr:ok+dr?ok/(ok+dr):null,ds:a.ok?a.dsum/a.ok:null,da:b.ok?b.dsum/b.ok:null,en,ctrl,epm:ok?en/ok:null,
+    dark:NODES.filter(n=>s.byNode[n].sent>2&&s.byNode[n].ok===0)}}
+let lastLogV={};
+function render(key){
+  const s=sims[key];
+  /* links & nodes */
+  for(const l of LINKS){const up=s.linkUp(l);const p=$('#'+key+'-'+l.id);p.style.opacity=up?(s.kind==='classic'&&l.t!=='wifi'?.28:1):.35;
+    p.setAttribute('stroke',up?colorOf(l.t):'var(--down)');$('#'+key+'-x'+l.id).setAttribute('visibility',up?'hidden':'visible')}
+  for(const n of Object.keys(NODEDEF)){const c=$('#'+key+'-n'+n);if(isBase(n)){c.setAttribute('class','nodec'+(s.down[n]?' dead':''));continue}
+    c.setAttribute('class','nodec'+(s.down[n]?' dead':(s.alarm[n]?' alarm':'')));
+    const r=$('#'+key+'-r'+n);const nd=s.nodes[n];
+    if(s.kind==='rodent'){const sh=b=>b?(isBase(b.via)?TN[b.tech]:b.via+'·'+TN[b.tech]):'none';r.textContent=`S:${sh(nd.best.surv)}  A:${sh(nd.best.alarm)}`}
+    else r.textContent=s.next[n]?'→ WiFi BS':'no route'}
+  /* packets */
+  let g='';
+  for(const f of s.fl){const p=Math.min(1,Math.max(0,(s.t-f.t0)/(f.t1-f.t0)));const pe=f.ok?p:Math.min(p,.55);
+    const [x,y]=linkPt(f.link,f.link.a===f.a?pe:1-pe);
+    if(!f.ok&&p>=.55){const fade=Math.max(0,1-(s.t-(f.t0+.55*(f.t1-f.t0)))/350);g+=`<text x="${x}" y="${y}" fill="var(--alarm)" opacity="${fade}" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="central">✕</text>`;continue}
+    if(f.ok&&p>=1)continue;
+    if(f.ctrl)g+=`<circle cx="${x}" cy="${y}" r="3.2" fill="var(--surface)" stroke="${colorOf(f.link.t)}" stroke-width="1.5"/>`;
+    else g+=`<circle cx="${x}" cy="${y}" r="${f.rv==='alarm'?6:4.5}" fill="${colorOf(f.link.t)}" stroke="${f.rv==='alarm'?'var(--alarm)':'var(--surface)'}" stroke-width="${f.rv==='alarm'?2.5:1.5}"/>`}
+  $('#'+key+'-fl').innerHTML=g;
+  /* kpis & energy */
+  const st=stats(s);
+  $('#'+key+'-k1').textContent=st.pdr==null?'–':(st.pdr*100).toFixed(0)+' %';
+  $('#'+key+'-k2').textContent=fmt(st.ds,' ms');$('#'+key+'-k3').textContent=fmt(st.da,' ms');$('#'+key+'-k4').textContent=st.en.toFixed(0);
+  const mx=Math.max(400,...NODES.map(n=>{const e=s.en[n];return e.wifi+e.lora+e.ble+e.ctrl}),...NODES.map(n=>{const e=sims.classic.en[n],f=sims.rodent.en[n];return Math.max(e.wifi+e.lora+e.ble+e.ctrl,f.wifi+f.lora+f.ble+f.ctrl)}));
+  for(const n of NODES){const e=s.en[n],tot=e.wifi+e.lora+e.ble+e.ctrl;
+    $('#'+key+'-eb'+n).innerHTML=['wifi','lora','ble'].map(t=>`<i style="width:${e[t]/mx*100}%;background:var(--${t})"></i>`).join('')+`<i style="width:${e.ctrl/mx*100}%;background:var(--muted)"></i>`;
+    $('#'+key+'-ev'+n).textContent=tot.toFixed(0)}
+  /* log */
+  const filt=$('#'+key+'-lf').value;const sig=s.logV+filt+s.t.toFixed(0).length;
+  if(lastLogV[key]!==s.logV+filt){lastLogV[key]=s.logV+filt;
+    const keep={all:()=>true,key:e=>e.cls!=='tx'&&e.cls!=='gen'||/alarm mode/.test(e.txt),route:e=>e.cls==='route'&&!/relays/.test(e.txt)||e.cls==='link'}[filt];
+    const el=$('#'+key+'-log');const stick=el.scrollTop+el.clientHeight>=el.scrollHeight-8;
+    el.innerHTML=s.log.filter(keep).slice(-45).map(e=>`<div class="${e.cls}"><span class="t">${(e.t/1000).toFixed(1)}s</span> ${e.txt}</div>`).join('');
+    if(stick)el.scrollTop=el.scrollHeight}
+}
+function chart(key){
+  const s=sims[key];const W=480,H=120,L=34,R=8,Tp=8,B=16,YM=600,win=60000;
+  let h='';for(const v of [0,200,400,600]){const y=Tp+(H-Tp-B)*(1-v/YM);h+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="var(--line)"/><text class="ax" x="${L-4}" y="${y}" text-anchor="end" dominant-baseline="central">${v}</text>`}
+  const t1=s.t,t0=Math.max(0,t1-win);
+  h+=`<text class="ax" x="${L}" y="${H-3}">${(t0/1000).toFixed(0)} s</text><text class="ax" x="${W-R}" y="${H-3}" text-anchor="end">${(t1/1000).toFixed(0)} s</text>`;
+  for(const p of s.pts){if(p.t<t0)continue;const x=L+(W-L-R)*((p.t-t0)/win);const y=Tp+(H-Tp-B)*(1-Math.min(p.d,YM)/YM);
+    h+=`<circle cx="${x}" cy="${y}" r="${p.rv==='alarm'?3.2:2.6}" fill="${p.rv==='alarm'?'var(--alarm)':'var(--muted)'}" opacity=".85"/>`}
+  $('#'+key+'-ch').innerHTML=h}
+function compare(){
+  const c=stats(sims.classic),r=stats(sims.rodent);
+  const rows=[
+    ['Messages delivered (of those resolved)',c.pdr==null?null:c.pdr*100,r.pdr==null?null:r.pdr*100,v=>v.toFixed(0)+' %',1],
+    ['Nodes that could not deliver anything',c.dark.length,r.dark.length,v=>v+'',-1],
+    ['Surveillance delay (avg)',c.ds,r.ds,v=>v.toFixed(0)+' ms',-1],
+    ['Alarm delay (avg)',c.da,r.da,v=>v.toFixed(0)+' ms',-1],
+    ['Total network energy',c.en,r.en,v=>v.toFixed(0),-1],
+    ['Energy per delivered message',c.epm,r.epm,v=>v.toFixed(1),-1],
+    ['Control overhead (share of energy)',c.en?c.ctrl/c.en*100:null,r.en?r.ctrl/r.en*100:null,v=>v.toFixed(1)+' %',-1,true]];
+  let h='<tr><th>Metric</th><th>Classic</th><th>RODENT</th></tr>';
+  for(const [lab,a,b,f,dir,info] of rows){let wa='',wb='';
+    if(!info&&a!=null&&b!=null&&a!==b){if((a-b)*dir>0)wa='win';else wb='win'}
+    h+=`<tr><td>${lab}</td><td class="n ${wa}">${a==null?'–':f(a)}</td><td class="n ${wb}">${b==null?'–':f(b)}</td></tr>`}
+  h+=`<tr><td>Unreachable nodes</td><td class="n">${c.dark.join(', ')||'none'}</td><td class="n">${r.dark.join(', ')||'none'}</td></tr>`;
+  $('#cmpT').innerHTML=h}
+let last=performance.now(),acc=0;
+function frame(now){const dt=Math.min(100,now-last);last=now;
+  if(running){const ms=dt*speed;for(const s of Object.values(sims))s.step(ms)}
+  render('classic');render('rodent');
+  acc+=dt;if(acc>400){acc=0;chart('classic');chart('rodent');compare()}
+  $('#clock').textContent='t = '+(sims.rodent.t/1000).toFixed(1)+' s (simulated)';
+  requestAnimationFrame(frame)}
+window.__step=ms=>{for(const s of Object.values(sims))s.step(ms);render('classic');render('rodent');chart('classic');chart('rodent');compare()};
+requestAnimationFrame(frame);
+</script>
+
+</body></html>

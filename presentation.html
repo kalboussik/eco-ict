@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RODENT Presentation</title>
+<meta name="description" content="A slide-deck explanation of RODENT, a routing protocol for multi-radio sensor networks: the algorithm, the bounded TOPSIS decision and the packet format.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f5f8;--card:#fff;--ink:#14202b;--mut:#5a6978;--line:#d8dee6;--acc:#0b7a75;--accsoft:#dff1ef;--wifi:#2563d9;--lora:#12915f;--ble:#8b50d4;--bad:#d5352f;--badsoft:#fbe5e3;--ok:#12915f;--oksoft:#def3e9;--shadow:0 1px 2px rgba(20,32,43,.06),0 8px 24px rgba(20,32,43,.06)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e141c;--card:#17202b;--ink:#e8eef4;--mut:#9aa9b8;--line:#2a3745;--acc:#3cc7bd;--accsoft:#16403f;--wifi:#6a9bff;--lora:#3fcf92;--ble:#b58cf0;--bad:#ff7a73;--badsoft:#44201e;--ok:#3fcf92;--oksoft:#14382a;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35)}}
+:root[data-theme=dark]{--bg:#0e141c;--card:#17202b;--ink:#e8eef4;--mut:#9aa9b8;--line:#2a3745;--acc:#3cc7bd;--accsoft:#16403f;--wifi:#6a9bff;--lora:#3fcf92;--ble:#b58cf0;--bad:#ff7a73;--badsoft:#44201e;--ok:#3fcf92;--oksoft:#14382a;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35)}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif}
+.mono,code{font-family:'IBM Plex Mono',ui-monospace,monospace}
+#frame{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{width:1280px;height:720px;position:relative;flex:none;transform-origin:center center}
+.slide{position:absolute;inset:0;padding:56px 76px 64px;display:none;flex-direction:column;gap:20px}
+.slide.on{display:flex}
+.kick{font:500 15px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
+h1{font-size:76px;line-height:1.02;letter-spacing:-.025em;font-weight:700}
+h2{font-size:42px;line-height:1.1;letter-spacing:-.02em;font-weight:700;max-width:1050px}
+h2 em,h1 em{font-style:normal;color:var(--acc)}
+.lead{font-size:22px;line-height:1.45;color:var(--mut);max-width:900px}
+.lead b,p b{color:var(--ink);font-weight:600}
+.row{display:flex;gap:28px}.col{display:flex;flex-direction:column;gap:14px}
+.grow{flex:1;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;box-shadow:var(--shadow)}
+.card h3{font-size:22px;margin-bottom:8px}
+.card p,.card li{font-size:18px;line-height:1.45;color:var(--mut)}
+.card ul{padding-left:20px}
+.chip{display:inline-block;font:500 14px 'IBM Plex Mono',monospace;padding:3px 10px;border-radius:99px;background:var(--accsoft);color:var(--acc)}
+.chip.wifi{background:color-mix(in srgb,var(--wifi) 16%,transparent);color:var(--wifi)}
+.chip.lora{background:color-mix(in srgb,var(--lora) 16%,transparent);color:var(--lora)}
+.chip.bad{background:var(--badsoft);color:var(--bad)}.chip.ok{background:var(--oksoft);color:var(--ok)}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:18px}
+th{font:500 13px 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+td{white-space:nowrap}td.m,th.m{font-family:'IBM Plex Mono',monospace;text-align:right}
+.tight td,.tight th{padding:8px 6px;font-size:15px}.bar{height:14px;background:var(--line);border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acc);border-radius:8px;transition:width .6s}
+button{font:500 16px 'IBM Plex Sans',sans-serif;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:8px 18px;cursor:pointer}
+button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+[data-s]{opacity:0;transform:translateY(10px);transition:opacity .4s,transform .4s;pointer-events:none}
+[data-s].show{opacity:1;transform:none;pointer-events:auto}
+.flag{font-size:17px;padding:10px 14px;border-radius:10px;background:var(--line);color:var(--mut);min-height:46px;display:flex;align-items:center}
+.flag.bad{background:var(--badsoft);color:var(--bad)}.flag.ok{background:var(--oksoft);color:var(--ok)}
+.eq{font:500 22px/1.7 'IBM Plex Mono',monospace;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 22px}
+.eq i{font-style:normal;color:var(--acc)}
+.big{font:700 64px/1 'IBM Plex Sans';letter-spacing:-.03em;color:var(--acc)}
+/* map */
+svg text{font-family:'IBM Plex Mono',monospace}
+.pulse{animation:pulse 1.6s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{from{transform:scale(.6);opacity:.9}to{transform:scale(2.2);opacity:0}}
+.dash{stroke-dasharray:9 7;animation:dash .8s linear infinite}@keyframes dash{to{stroke-dashoffset:-16}}
+/* chrome */
+#bar{position:fixed;left:0;right:0;bottom:0;height:46px;display:flex;align-items:center;gap:14px;padding:0 18px;font:500 13px 'IBM Plex Mono',monospace;color:var(--mut);z-index:5}
+#prog{flex:1;height:4px;background:var(--line);border-radius:4px;overflow:hidden}#prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .3s}
+#bar button{padding:4px 12px;font-size:13px}
+#ov{position:fixed;inset:0;background:var(--bg);z-index:10;display:none;overflow:auto;padding:40px}
+#ov.on{display:block}
+#ov h4{font:600 22px 'IBM Plex Sans';margin-bottom:20px}
+#ovg{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+#ovg button{border-radius:12px;text-align:left;padding:14px 16px;font-size:16px;line-height:1.3;height:92px;overflow:hidden}
+#ovg button span{display:block;font:500 12px 'IBM Plex Mono';color:var(--acc);margin-bottom:6px}
+#help{position:fixed;right:18px;top:14px;font:500 12px 'IBM Plex Mono';color:var(--mut);z-index:5;opacity:.8}
+@media print{html,body{overflow:visible;height:auto}}
+</style>
+</head>
+<body>
+<div id="frame"><div id="stage">
+
+<!-- 1 TITLE -->
+<section class="slide" id="s-title" data-title="RODENT">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:26px">
+    <div class="kick">Routing protocol for multi-radio sensor networks</div>
+    <h1>RODENT.<br><em>Pick the right radio,</em><br>message by message.</h1>
+    <p class="lead" data-s="1">How a sensor node chooses between WiFi, BLE and LoRa on every packet, with almost no computation and no central controller.</p>
+  </div>
+  <div class="mono" style="color:var(--mut);font-size:15px" data-s="2">Based on the PhD thesis of Brandon Foubert, Université de Lille, 2021 · Prototype on Pycom FiPy</div>
+</section>
+
+<!-- 2 RADIOS -->
+<section class="slide" id="s-radios" data-title="No radio is best at everything">
+  <div class="kick">The problem</div>
+  <h2>No radio is best at <em>everything</em></h2>
+  <div class="row" style="flex:1;align-items:center">
+    <div class="card grow" style="padding:30px">
+      <table id="radioTbl"></table>
+    </div>
+    <div class="col" style="width:390px">
+      <p class="lead" data-s="1" style="font-size:22px"><b>WiFi</b> is fast but burns 8× the current of LoRa.</p>
+      <p class="lead" data-s="2" style="font-size:22px"><b>LoRa</b> is thrifty and reaches far, but is ~180× slower.</p>
+      <p class="lead" data-s="3" style="font-size:22px">A classic protocol picks <b>one</b> radio. Then any node that radio cannot reach is simply lost.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3 GOAL -->
+<section class="slide" id="s-goal" data-title="One network, many radios, per-message choice">
+  <div class="kick">The idea</div>
+  <h2>Choose the road <em>per message</em>, not per network</h2>
+  <p class="lead">A temperature reading and a fire alarm do not deserve the same road. RODENT lets each message type carry its own <b>requirements vector</b>: how much it cares about energy, cost and speed.</p>
+  <div class="row" style="margin-top:6px">
+    <div class="card grow" data-s="1">
+      <h3>Surveillance <span class="chip">rv = 0</span></h3>
+      <p>Periodic readings. Cheap and frugal wins.</p>
+      <div id="wSurv" style="margin-top:16px"></div>
+    </div>
+    <div class="card grow" data-s="2">
+      <h3>Alarm <span class="chip bad">rv = 1</span></h3>
+      <p>Rare but urgent. Speed wins, cost does not matter.</p>
+      <div id="wAlarm" style="margin-top:16px"></div>
+    </div>
+  </div>
+  <p class="lead" data-s="3" style="font-size:20px">Result: <b>the same node can send surveillance over LoRa and the alarm over WiFi</b>, at the same moment.</p>
+</section>
+
+<!-- 4 NETWORK -->
+<section class="slide" id="s-net" data-title="The lab network">
+  <div class="kick">The setting</div>
+  <h2>Many nodes, several radios, <em>two base stations</em></h2>
+  <div class="row" style="flex:1;align-items:center">
+    <div class="card" style="padding:12px"><svg id="m-net" viewBox="0 0 640 380" width="740" height="440"></svg></div>
+    <div class="col grow">
+      <p class="lead" style="font-size:20px" data-s="1"><b>Convergecast.</b> Every node sends toward a base station: <span class="chip wifi">SW</span> for WiFi, <span class="chip lora">SL</span> for LoRa.</p>
+      <p class="lead" style="font-size:20px" data-s="2"><b>N5</b> only hears N4, and only over LoRa. A WiFi-only protocol delivers <b>0 %</b> of its packets.</p>
+      <p class="lead" style="font-size:20px" data-s="3"><b>N3</b> has a weak WiFi link to the base but can reach N1 by LoRa: two possible roads, two different trade-offs.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 5 DATA STRUCTURES -->
+<section class="slide" id="s-ds" data-title="Three small data structures">
+  <div class="kick">The algorithm · 1</div>
+  <h2>Everything fits in <em>three small tables</em></h2>
+  <div class="row" style="flex:1;align-items:flex-start">
+    <div class="card grow" style="flex:1.2" data-s="1">
+      <h3>LM · link matrix</h3>
+      <p>What each of my radio links costs. Static, filled in at deployment.</p>
+      <table class="tight" style="margin-top:12px">
+        <tr><th>Link (N5)</th><th class="m">energy</th><th class="m">cost</th><th class="m">rate</th></tr>
+        <tr><td>N4 · <span class="chip lora">LoRa</span></td><td class="m">15</td><td class="m">1</td><td class="m">20</td></tr>
+      </table>
+    </div>
+    <div class="card grow" style="flex:1.5" data-s="2">
+      <h3>RM · route matrix</h3>
+      <p>The best road I know to a base, per message type. Learned from neighbours.</p>
+      <table class="tight" style="margin-top:12px">
+        <tr><th>rv</th><th>via</th><th class="m">E · C · R · hops</th></tr>
+        <tr><td>0</td><td>N4 · LoRa</td><td class="m">30 · 2 · 20 · 2</td></tr>
+        <tr><td>1</td><td>N4 · LoRa</td><td class="m">30 · 2 · 20 · 2</td></tr>
+      </table>
+    </div>
+    <div class="card grow" data-s="3">
+      <h3>RV · requirements</h3>
+      <p>Weights per message type, summing to 1.</p>
+      <table class="tight" style="margin-top:12px">
+        <tr><th></th><th class="m">E</th><th class="m">C</th><th class="m">R</th></tr>
+        <tr><td>0 surveillance</td><td class="m">.6</td><td class="m">.3</td><td class="m">.1</td></tr>
+        <tr><td>1 alarm</td><td class="m">.1</td><td class="m">.1</td><td class="m">.8</td></tr>
+      </table>
+    </div>
+  </div>
+  <p class="lead" data-s="4" style="font-size:20px">Each road has <b>four numbers, one byte each</b>: energy, <b>cost</b> (the theoretical cost of sending a message over that link, not a price), rate and hops. Hops carry weight 0 but break ties and stop loops.</p>
+</section>
+
+<!-- 6 COMPOSITION -->
+<section class="slide" id="s-comp" data-title="Building a road from a neighbour's road">
+  <div class="kick">The algorithm · 2</div>
+  <h2>A road is <em>built by hearing</em> a neighbour’s road</h2>
+  <p class="lead" style="font-size:20px">N5 hears N4 announce its own best road to the LoRa base (<span class="mono">15 · 1 · 20 · 1</span>). N5 adds the cost of the link it heard it on.</p>
+  <div class="card" style="padding:18px 24px">
+    <table>
+      <tr><th>Attribute</th><th class="m">N4’s road</th><th class="m">+ link N5→N4</th><th>Rule</th><th class="m">N5’s road</th></tr>
+      <tr data-s="1"><td><b>Energy</b></td><td class="m">15</td><td class="m">15</td><td>add</td><td class="m" id="c1">30</td></tr>
+      <tr data-s="2"><td><b>Cost</b></td><td class="m">1</td><td class="m">1</td><td>add</td><td class="m" id="c2">2</td></tr>
+      <tr data-s="3"><td><b>Rate</b></td><td class="m">20</td><td class="m">20</td><td>minimum <span class="note" style="color:var(--mut);font-size:15px">(slowest hop)</span></td><td class="m" id="c3">20</td></tr>
+      <tr data-s="4"><td><b>Hops</b></td><td class="m">1</td><td class="m">+1</td><td>add 1</td><td class="m" id="c4">2</td></tr>
+    </table>
+  </div>
+  <div class="row" style="align-items:stretch">
+    <div class="card grow" data-s="5"><p>Costs <b>accumulate</b>, speed is a <b>bottleneck</b>. Values saturate at 255 so a byte is always enough.</p></div>
+    <div class="card grow" data-s="6"><p>This is plain <b>distance-vector</b> routing, only the “distance” has four dimensions and is judged by weights, not a single number.</p></div>
+  </div>
+</section>
+
+<!-- 7 PIGGYBACK -->
+<section class="slide" id="s-pig" data-title="Piggybacking: roads travel inside data">
+  <div class="kick">The algorithm · 3</div>
+  <h2>No routing messages: roads <em>ride inside data packets</em></h2>
+  <div class="row" style="flex:1;align-items:center">
+    <div class="card" style="padding:12px"><svg id="m-pig" viewBox="0 0 640 380" width="700" height="415"></svg></div>
+    <div class="col grow">
+      <div class="card" id="pigTxt" style="min-height:230px"></div>
+      <p class="lead" style="font-size:18px" data-s="4">The header costs only <b>+5 bytes</b> per packet. In return the network needs no flooding and no dedicated routing traffic.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 8 FRESHNESS -->
+<section class="slide" id="s-fresh" data-title="Staying fresh and loop free">
+  <div class="kick">The algorithm · 4</div>
+  <h2>Roads <em>expire</em>, links are <em>watched</em></h2>
+  <div class="row" style="flex:1;align-items:flex-start">
+    <div class="card grow" data-s="1">
+      <h3>Beacons</h3>
+      <p>A rarely used road would go stale. When a node has nothing to send, it emits a <b>control packet</b> (empty data) carrying its roads. Base stations beacon too, which proves their link is alive.</p>
+    </div>
+    <div class="card grow" data-s="2">
+      <h3>Two clocks</h3>
+      <p><span class="chip">7 s</span> without a beacon from a neighbour: the <b>link</b> is declared dead.</p>
+      <p style="margin-top:10px"><span class="chip">14 s</span> without a refresh: the <b>road</b> is forgotten.</p>
+      <p style="margin-top:10px;font-size:15px">(values of the prototype, tunable)</p>
+    </div>
+    <div class="card grow" data-s="3">
+      <h3>Split horizon</h3>
+      <p>If a packet is addressed <b>to me</b>, the road in its header runs through me. I ignore it. This blocks the classic two-node loop.</p>
+    </div>
+  </div>
+  <p class="lead" data-s="4" style="font-size:20px">Together: a failure is noticed in seconds, bad news spreads, and stale roads disappear by themselves.</p>
+</section>
+
+<!-- 9 CLASSIC TOPSIS -->
+<section class="slide" id="s-topsis" data-title="Deciding: ranking roads with TOPSIS">
+  <div class="kick">The decision · 1</div>
+  <h2>Many roads, conflicting numbers: <em>rank with TOPSIS</em></h2>
+  <p class="lead" style="font-size:20px">A multi-criteria method: the best road is closest to an <b>ideal</b> road and farthest from the <b>worst</b> one.</p>
+  <div class="row" style="flex:1">
+    <div class="col grow" style="gap:10px">
+      <div class="card" data-s="1" style="padding:14px 20px"><p><b>1.</b> Normalise every column (÷ column norm)</p></div>
+      <div class="card" data-s="2" style="padding:14px 20px"><p><b>2.</b> Multiply by the weights of the message type</p></div>
+      <div class="card" data-s="3" style="padding:14px 20px"><p><b>3.</b> Ideal and worst = best and worst value <b>among the candidates</b></p></div>
+      <div class="card" data-s="4" style="padding:14px 20px"><p><b>4.</b> Distance to ideal (S⁺) and to worst (S⁻)</p></div>
+      <div class="card" data-s="5" style="padding:14px 20px"><p><b>5.</b> Score C = S⁻ / (S⁺ + S⁻), highest wins</p></div>
+    </div>
+    <div class="col" style="width:420px;justify-content:center">
+      <div class="card" data-s="6" style="border-color:var(--bad)">
+        <h3 style="color:var(--bad)">Two weaknesses</h3>
+        <ul><li>Steps 1 and 3 depend on the <b>whole candidate set</b>: adding or removing a road can reorder the others. This is <b>rank reversal</b>.</li><li style="margin-top:8px">Normalising and finding best/worst costs many operations on a tiny microcontroller.</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 BOUNDED -->
+<section class="slide" id="s-bounded" data-title="RODENT's bounded normalisation">
+  <div class="kick">The decision · 2</div>
+  <h2>Fix the yardstick: <em>bounded normalisation</em></h2>
+  <div class="row" style="flex:1;align-items:flex-start">
+    <div class="col grow">
+      <div class="eq" data-s="1"><span style="color:var(--mut)">benefit (rate)</span><br>r = x / B<sup>+</sup> &nbsp;&nbsp; <span style="color:var(--mut)">lower is better (energy, cost)</span><br>r = B<sup>−</sup> / x</div>
+      <div class="eq" data-s="2">v = <i>w</i> · r<br>ideal = <i>w</i> &nbsp; worst = 0</div>
+      <div class="eq" data-s="3">S⁺ = √Σ(w − v)² &nbsp; S⁻ = √Σ v²<br>C = S⁻ / (S⁺ + S⁻)</div>
+    </div>
+    <div class="col" style="width:440px">
+      <div class="card" data-s="4">
+        <h3>Why it works</h3>
+        <ul><li>Bounds are <b>constants</b> (e.g. 255 for rate): a road’s score no longer depends on its rivals.</li><li style="margin-top:6px">The ideal is simply the weight vector: nothing to search for.</li></ul>
+      </div>
+      <div class="card" data-s="5">
+        <h3>What it buys</h3>
+        <div class="row" style="gap:20px;margin-top:6px"><div><div class="big">−38%</div><p style="font-size:15px">decision time<br>(5×5 table: 4.79 → 2.96 ms)</p></div><div><div class="big">82%</div><p style="font-size:15px">same route as<br>classic TOPSIS</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 DECISION LAB -->
+<section class="slide" id="s-dec" data-title="Live decision at a node">
+  <div class="kick">The decision · 3 · interactive</div>
+  <h2>Same node, <em>different message</em>, different road</h2>
+  <div class="row" style="align-items:center;gap:12px">
+    <span class="mono" style="color:var(--mut)">node</span><button data-n="N3" class="on">N3</button><button data-n="N4">N4</button>
+    <span style="width:20px"></span>
+    <span class="mono" style="color:var(--mut)">message</span><button data-u="0" class="on">Surveillance</button><button data-u="1">Alarm</button>
+  </div>
+  <div class="card" style="padding:14px 22px"><table id="decTbl"></table></div>
+  <div class="flag" id="decFlag"></div>
+</section>
+
+<!-- 12 RANK REVERSAL -->
+<section class="slide" id="s-rr" data-title="Rank reversal, live">
+  <div class="kick">The decision · 4 · interactive</div>
+  <h2>Remove a road nobody uses. <em>Does the order change?</em></h2>
+  <div class="card" style="padding:12px 22px"><table id="rrTbl"></table></div>
+  <div class="row" style="flex:1">
+    <div class="col grow"><div class="mono" style="font-size:14px;color:var(--mut);letter-spacing:.08em">CLASSIC TOPSIS</div><div id="rkC" class="col" style="gap:4px"></div><div class="flag" id="flC"></div></div>
+    <div class="col grow"><div class="mono" style="font-size:14px;color:var(--acc);letter-spacing:.08em">RODENT (BOUNDED)</div><div id="rkR" class="col" style="gap:4px"></div><div class="flag" id="flR"></div></div>
+  </div>
+</section>
+
+<!-- 13 PACKET -->
+<section class="slide" id="s-pkt" data-title="The packet">
+  <div class="kick">The wire format</div>
+  <h2>A packet is <em>20 bytes</em> for a 7-byte reading</h2>
+  <div class="card" style="padding:24px"><div id="pkBytes" style="display:flex;flex-wrap:wrap;gap:6px;font:500 24px 'IBM Plex Mono'"></div></div>
+  <div id="pkInfo" class="card" style="min-height:96px"></div>
+  <p class="lead" style="font-size:18px" data-s="1">Classic frame: 8 bytes of overhead. RODENT: <b>13</b>. Those 5 extra bytes are the whole routing protocol. Hover or tap a field.</p>
+</section>
+
+<!-- 14 FAILURE -->
+<section class="slide" id="s-fail" data-title="When the WiFi base dies">
+  <div class="kick">Resilience · step through</div>
+  <h2>The WiFi base stops. <em>The alarm finds another way.</em></h2>
+  <div class="row" style="flex:1;align-items:center">
+    <div class="card" style="padding:12px"><svg id="m-fail" viewBox="0 0 640 380" width="560" height="332"></svg></div>
+    <div class="col grow">
+      <div class="mono" id="fT" style="color:var(--acc);font-size:16px"></div>
+      <div class="card" style="padding:12px 18px"><table id="fTbl"></table></div>
+      <div class="flag" id="fFlag"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 RESULTS -->
+<section class="slide" id="s-res" data-title="Results">
+  <div class="kick">Results · lab prototype</div>
+  <h2>From <em>unreachable</em> to <em>delivered</em></h2>
+  <div class="row" style="flex:1">
+    <div class="card grow">
+      <h3>Delivery ratio of N5 (LoRa only)</h3>
+      <div class="col" style="gap:18px;margin-top:14px">
+        <div data-s="1"><div class="row" style="justify-content:space-between"><span>Classic (WiFi)</span><b class="mono">0 %</b></div><div class="bar"><i style="width:0;background:var(--bad)"></i></div></div>
+        <div data-s="2"><div class="row" style="justify-content:space-between"><span>RODENT</span><b class="mono">≈ 80 %</b></div><div class="bar"><i style="width:80%"></i></div></div>
+        <div data-s="3"><div class="row" style="justify-content:space-between"><span>RODENT, LoRa sent twice</span><b class="mono">&gt; 95 %</b></div><div class="bar"><i style="width:96%;background:var(--ok)"></i></div></div>
+      </div>
+      <p style="margin-top:16px;font-size:15px">Losses came from raw WiFi/LoRa modes and the hardware, not from the routing.</p>
+    </div>
+    <div class="col" style="width:420px">
+      <div class="card" data-s="4"><div class="big">≈ 30 %</div><p style="margin-top:6px">of rankings suffer rank reversal with classic TOPSIS on 5×5 tables, and more as tables grow.</p></div>
+      <div class="card" data-s="5"><div class="big">≈ 448 µJ</div><p style="margin-top:6px">saved per ranking by the cheaper decision (estimated from datasheets).</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 16 LIMITS -->
+<section class="slide" id="s-lim" data-title="Limits">
+  <div class="kick">Honest limits</div>
+  <h2>What RODENT <em>does not</em> do yet</h2>
+  <div class="row" style="flex:1;align-items:flex-start">
+    <div class="col grow">
+      <div class="card" data-s="1"><h3>Link discovery is assumed</h3><p>The link matrix is static in the prototype; discovering neighbours and measuring their costs is future work.</p></div>
+      <div class="card" data-s="2"><h3>Convergecast only</h3><p>Nodes talk to base stations. Node-to-node or downlink traffic needs more.</p></div>
+    </div>
+    <div class="col grow">
+      <div class="card" data-s="3"><h3>Overhead</h3><p>5 extra bytes per packet plus beacons. Worth it for small payloads only if the radios’ cost per byte is low.</p></div>
+      <div class="card" data-s="4"><h3>Small, indoor test</h3><p>Six nodes in a lab. Field trials planned in agriculture were cancelled by Covid-19.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 TAKEAWAYS -->
+<section class="slide" id="s-end" data-title="Takeaways">
+  <div class="kick">To remember</div>
+  <h2>Four ideas, <em>one tiny protocol</em></h2>
+  <div class="col" style="gap:14px">
+    <div class="card" data-s="1" style="padding:16px 24px"><p style="color:var(--ink);font-size:21px"><b style="color:var(--acc)">1 · </b>Each message type has its own weights, so each gets its own road.</p></div>
+    <div class="card" data-s="2" style="padding:16px 24px"><p style="color:var(--ink);font-size:21px"><b style="color:var(--acc)">2 · </b>Roads are learned by overhearing neighbours: costs add, speed is the bottleneck.</p></div>
+    <div class="card" data-s="3" style="padding:16px 24px"><p style="color:var(--ink);font-size:21px"><b style="color:var(--acc)">3 · </b>Bounded TOPSIS ranks with a fixed yardstick: stable order, 38 % faster.</p></div>
+    <div class="card" data-s="4" style="padding:16px 24px"><p style="color:var(--ink);font-size:21px"><b style="color:var(--acc)">4 · </b>Expiry and beacons make failures heal themselves.</p></div>
+  </div>
+  <p class="mono" data-s="5" style="color:var(--mut);font-size:14px;margin-top:auto">B. Foubert, “Routing in heterogeneous wireless sensor networks”, PhD thesis, Université de Lille, 2021.</p>
+</section>
+
+<!-- 18 PYCOM -->
+<section class="slide" id="s-pycom" data-title="Meet the Pycom FiPy">
+  <div class="kick">The hardware</div>
+  <h2>Meet the <em>Pycom FiPy</em></h2>
+  <p class="lead" style="font-size:21px">A programmable board: a <b>tiny computer with no screen and no keyboard</b>, made to sit inside a sensor and talk over radio.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;flex:1;align-content:start">
+    <div class="card" data-s="1"><h3>Tiny</h3><p><b>55 × 20 mm, 7 g.</b> It runs on 3.3 to 5.5 V: a USB cable or a small battery is enough.</p></div>
+    <div class="card" data-s="2"><h3>Five networks on one board</h3><p>WiFi, Bluetooth, <b>LoRa</b>, Sigfox and LTE-M (cellular). RODENT uses two of them: <span class="chip wifi">WiFi</span> <span class="chip lora">LoRa</span></p></div>
+    <div class="card" data-s="3"><h3>Programmed in Python</h3><p><b>MicroPython</b>, a lean Python for chips. Write a file, copy it to the card, it runs. No compiler.</p></div>
+    <div class="card" data-s="4"><h3>Made for sensors</h3><p>Up to 22 pins for sensors (analog, I²C, SPI, serial) and a deep-sleep mode that sips microamps.</p></div>
+  </div>
+  <p class="mono" data-s="5" style="color:var(--mut);font-size:14px">The FiPy is now discontinued. The ideas carry over to any ESP32 board with a LoRa chip.</p>
+</section>
+
+<!-- 19 ANATOMY -->
+<section class="slide" id="s-anatomy" data-title="What is on the board">
+  <div class="kick">The hardware</div>
+  <h2>What is <em>on the board</em></h2>
+  <div class="row" style="flex:1;align-items:center">
+    <div class="card" style="padding:18px;width:690px;flex:none">
+      <svg viewBox="0 0 640 330" style="width:100%;display:block" role="img" aria-label="Simplified drawing of a Pycom FiPy on its expansion board">
+        <g stroke="var(--ink)" stroke-width="2.4">
+          <rect x="30" y="170" width="580" height="120" rx="12" fill="var(--line)"/>
+          <rect x="30" y="50" width="580" height="116" rx="12" fill="var(--accsoft)" stroke="var(--acc)"/>
+        </g>
+        <g fill="var(--mut)">
+          <g><rect x="46" y="52" width="10" height="7" rx="1"/><rect x="75" y="52" width="10" height="7" rx="1"/><rect x="104" y="52" width="10" height="7" rx="1"/><rect x="133" y="52" width="10" height="7" rx="1"/><rect x="162" y="52" width="10" height="7" rx="1"/><rect x="191" y="52" width="10" height="7" rx="1"/><rect x="220" y="52" width="10" height="7" rx="1"/><rect x="249" y="52" width="10" height="7" rx="1"/><rect x="278" y="52" width="10" height="7" rx="1"/><rect x="307" y="52" width="10" height="7" rx="1"/><rect x="336" y="52" width="10" height="7" rx="1"/><rect x="365" y="52" width="10" height="7" rx="1"/><rect x="394" y="52" width="10" height="7" rx="1"/><rect x="423" y="52" width="10" height="7" rx="1"/><rect x="452" y="52" width="10" height="7" rx="1"/><rect x="481" y="52" width="10" height="7" rx="1"/><rect x="510" y="52" width="10" height="7" rx="1"/><rect x="539" y="52" width="10" height="7" rx="1"/><rect x="568" y="52" width="10" height="7" rx="1"/></g>
+          <g><rect x="46" y="157" width="10" height="7" rx="1"/><rect x="75" y="157" width="10" height="7" rx="1"/><rect x="104" y="157" width="10" height="7" rx="1"/><rect x="133" y="157" width="10" height="7" rx="1"/><rect x="162" y="157" width="10" height="7" rx="1"/><rect x="191" y="157" width="10" height="7" rx="1"/><rect x="220" y="157" width="10" height="7" rx="1"/><rect x="249" y="157" width="10" height="7" rx="1"/><rect x="278" y="157" width="10" height="7" rx="1"/><rect x="307" y="157" width="10" height="7" rx="1"/><rect x="336" y="157" width="10" height="7" rx="1"/><rect x="365" y="157" width="10" height="7" rx="1"/><rect x="394" y="157" width="10" height="7" rx="1"/><rect x="423" y="157" width="10" height="7" rx="1"/><rect x="452" y="157" width="10" height="7" rx="1"/><rect x="481" y="157" width="10" height="7" rx="1"/><rect x="510" y="157" width="10" height="7" rx="1"/><rect x="539" y="157" width="10" height="7" rx="1"/><rect x="568" y="157" width="10" height="7" rx="1"/></g>
+        </g>
+        <g stroke="var(--ink)" stroke-width="2" fill="var(--card)">
+          <rect x="300" y="80" width="110" height="64" rx="6"/>
+          <rect x="170" y="82" width="86" height="60" rx="6"/>
+          <rect x="446" y="82" width="86" height="60" rx="6"/>
+          <rect x="52" y="208" width="112" height="56" rx="6" fill="var(--bg)"/>
+          <circle cx="214" cy="236" r="16" fill="var(--bg)"/>
+          <circle cx="560" cy="236" r="12" fill="#f5b83a"/>
+        </g>
+        <g font-size="13" text-anchor="middle" fill="var(--ink)" font-weight="500">
+          <text x="355" y="108">ESP32</text><text x="355" y="126" font-size="11" fill="var(--mut)">the brain</text>
+          <text x="213" y="108">LoRa</text><text x="213" y="126" font-size="11" fill="var(--mut)">+ Sigfox radios</text>
+          <text x="489" y="108">LTE-M</text><text x="489" y="126" font-size="11" fill="var(--mut)">cellular</text>
+          <text x="108" y="233">USB</text><text x="108" y="250" font-size="11" fill="var(--mut)">power + code</text>
+          <text x="214" y="240" font-size="10">reset</text>
+          <text x="560" y="262" font-size="11" fill="var(--mut)">button / LED</text>
+        </g>
+        <g stroke="var(--lora)" stroke-width="3" fill="none" stroke-linecap="round"><path d="M606 100 q14 -10 0 -22 M606 100 q-14 -10 0 -22" opacity="0"/><path d="M213 82 L213 20"/><path d="M355 80 L355 20"/><path d="M489 82 L489 20"/></g>
+        <g font-size="11" fill="var(--mut)" text-anchor="middle"><text x="213" y="14">antenna</text><text x="355" y="14">WiFi + Bluetooth antenna</text><text x="489" y="14">antenna</text></g>
+        <g font-size="12" font-weight="600" fill="var(--bg)" text-anchor="middle">
+          <circle cx="400" cy="76" r="12" fill="var(--acc)"/><text x="400" y="80">1</text>
+          <circle cx="246" cy="78" r="12" fill="var(--lora)"/><text x="246" y="82">3</text>
+          <circle cx="522" cy="78" r="12" fill="var(--mut)"/><text x="522" y="82">4</text>
+          <circle cx="40" cy="190" r="12" fill="var(--ink)"/><text x="40" y="194">5</text>
+          <circle cx="355" cy="50" r="12" fill="var(--wifi)"/><text x="355" y="54">2</text>
+        </g>
+        <text x="320" y="318" text-anchor="middle" font-size="12" fill="var(--mut)">simplified drawing: the FiPy (top) sits on an expansion board (bottom)</text>
+      </svg>
+    </div>
+    <div class="col grow" style="gap:12px">
+      <div class="card" data-s="1" style="padding:14px 18px"><p style="color:var(--ink)"><b style="color:var(--acc)">1 · ESP32.</b> Dual-core processor, 4 MB of memory. It runs your Python program.</p></div>
+      <div class="card" data-s="2" style="padding:14px 18px"><p style="color:var(--ink)"><b style="color:var(--wifi)">2 · WiFi and Bluetooth.</b> Built into the ESP32: fast, but about 240 mA when transmitting.</p></div>
+      <div class="card" data-s="3" style="padding:14px 18px"><p style="color:var(--ink)"><b style="color:var(--lora)">3 · LoRa radio.</b> Slow but thrifty (about 28 mA) and long range. A Sigfox radio comes with it.</p></div>
+      <div class="card" data-s="4" style="padding:14px 18px"><p style="color:var(--ink)"><b>4 · LTE-M modem.</b> Cellular data. Not used in our lab.</p></div>
+      <div class="card" data-s="5" style="padding:14px 18px"><p style="color:var(--ink)"><b>5 · Expansion board.</b> USB for power and code, a reset button, a user button, an RGB LED.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 20 CODE -->
+<section class="slide" id="s-code" data-title="Programming it feels like Python">
+  <div class="kick">The hardware</div>
+  <h2>Programming it feels like <em>Python</em></h2>
+  <div class="row" style="flex:1;align-items:center">
+    <div class="eq grow" style="font-size:19px;line-height:1.75;white-space:pre;padding:20px 26px">from network import WLAN, LoRa
+import socket
+
+wlan = WLAN(mode=WLAN.STA)
+wlan.connect("MY_WIFI", auth=(WLAN.WPA2, "secret"))
+
+lora = LoRa(mode=LoRa.LORA, region=LoRa.EU868)
+s = socket.socket(socket.AF_LORA, socket.SOCK_RAW)
+s.send(b"hello")</div>
+    <div class="col" style="width:420px;gap:14px">
+      <p class="lead" data-s="1" style="font-size:20px"><b>Join WiFi</b> like a laptop.</p>
+      <p class="lead" data-s="2" style="font-size:20px"><b>Start the LoRa radio</b> on the European 868 MHz band.</p>
+      <p class="lead" data-s="3" style="font-size:20px"><b>Open a socket and send.</b> Same idea as network programming on a PC.</p>
+      <p class="lead" data-s="4" style="font-size:20px">That is the whole radio layer. <b>RODENT is under 200 lines on top of it.</b></p>
+    </div>
+  </div>
+</section>
+
+<!-- 21 NEXT -->
+<section class="slide" id="s-next" data-title="What happens next">
+  <div class="kick">What happens next</div>
+  <h2>From paper to <em>real cards</em></h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;flex:1;align-content:start">
+    <div class="card" data-s="1" style="padding:26px"><div class="big">1</div><h3 style="margin-top:12px">A proof of concept</h3><p>We built RODENT in MicroPython on Pycom cards: six nodes, one LoRa base card and a laptop acting as the WiFi base station.</p></div>
+    <div class="card" data-s="2" style="padding:26px"><div class="big">2</div><h3 style="margin-top:12px">A live demonstration</h3><p>Here, on these cards. The classic protocol first, then RODENT. We break a base station and watch the roads heal.</p></div>
+    <div class="card" data-s="3" style="padding:26px"><div class="big">3</div><h3 style="margin-top:12px">Then we play</h3><p>Six teams, one card each. From your phone you tune your node and watch the protocol react. Points for delivered messages, relaying and good predictions.</p></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px" data-s="4">
+    <div class="card" style="padding:14px 18px"><p style="color:var(--ink);font-size:17px"><b style="color:var(--acc)">6</b> node cards<br><span style="font-size:15px">one per team</span></p></div>
+    <div class="card" style="padding:14px 18px"><p style="color:var(--ink);font-size:17px"><b style="color:var(--lora)">1</b> LoRa base card<br><span style="font-size:15px">the only one on USB</span></p></div>
+    <div class="card" style="padding:14px 18px"><p style="color:var(--ink);font-size:17px"><b style="color:var(--wifi)">1</b> laptop<br><span style="font-size:15px">WiFi base, collector, board</span></p></div>
+    <div class="card" style="padding:14px 18px"><p style="color:var(--ink);font-size:17px"><b>6</b> phones<br><span style="font-size:15px">one console per team</span></p></div>
+  </div>
+</section>
+
+</div></div>
+
+<div id="help">← → navigate · O overview · F fullscreen · T theme</div>
+<div id="bar"><button id="bPrev" aria-label="Previous">←</button><div id="prog"><i></i></div><span id="cnt">1 / 1</span><button id="bNext" aria-label="Next">→</button><button id="bOv">Overview</button><button id="bFs">Fullscreen</button><button id="bTh">Theme</button></div>
+<div id="ov"><h4>Slides</h4><div id="ovg"></div></div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+/* ===== engine: scoring (same as the firmware) ===== */
+const BND=[[10,0],[1,0],[255,1],[1,0]];
+function score(m,w){let sp=0,sm=0;for(let j=0;j<4;j++){const x=m[j]>0?m[j]:1,[b,asc]=BND[j];let r=asc?x/b:b/x;if(r>1)r=1;const v=w[j]*r;sp+=(w[j]-v)**2;sm+=v*v}sp=Math.sqrt(sp);sm=Math.sqrt(sm);return sp+sm?sm/(sp+sm):0}
+const RVW=[[.6,.3,.1,0],[.1,.1,.8,0]];
+const rN=(m,w)=>m.map((x,j)=>{x=Math.max(x,1);const[b,a]=BND[j];return Math.min(1,a?x/b:b/x)});
+/* ===== map ===== */
+const NODES={SW:[70,100],SL:[70,300],N1:[250,50],N2:[250,200],N3:[250,330],N4:[430,200],N5:[580,300]};
+const LINKS=[['N1','SW','wifi'],['N2','SW','wifi'],['N2','SL','lora'],['N3','SW','wifi','weak'],['N1','N3','lora'],['N4','SW','wifi'],['N4','SL','lora'],['N4','N5','lora']];
+function mapSVG(o={}){
+  const hot=o.hot||[],dead=o.dead||[],ring=o.ring||[],tag=o.tag||{},deadL=o.deadL||[];
+  const key=(a,b)=>[a,b].sort().join('-');
+  let s='';
+  for(const[a,b,t,w]of LINKS){const k=key(a,b),[x1,y1]=NODES[a],[x2,y2]=NODES[b];
+    const col=t==='wifi'?'var(--wifi)':'var(--lora)',isH=hot.includes(k),isD=deadL.includes(k)||dead.includes(a)||dead.includes(b);
+    s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${isD?'var(--bad)':col}" stroke-width="${isH?5:2.4}" opacity="${isH?1:isD?.55:.45}" ${w?'stroke-dasharray="3 6"':''} class="${isH?'dash':''}" ${isD?'stroke-dasharray="3 7"':''}/>`}
+  for(const[n,[x,y]]of Object.entries(NODES)){
+    const base=n[0]==='S',isD=dead.includes(n),c=n==='SW'?'var(--wifi)':n==='SL'?'var(--lora)':'var(--acc)';
+    if(ring.includes(n))s+=`<circle class="pulse" cx="${x}" cy="${y}" r="24" fill="none" stroke="var(--acc)" stroke-width="3"/>`;
+    s+=`<g opacity="${isD?.35:1}">`+(base?`<rect x="${x-26}" y="${y-18}" width="52" height="36" rx="8" fill="${c}"/>`:`<circle cx="${x}" cy="${y}" r="22" fill="var(--card)" stroke="${c}" stroke-width="3"/>`)+`<text x="${x}" y="${y+5}" text-anchor="middle" font-size="14" font-weight="500" fill="${base?'#fff':'var(--ink)'}">${n}</text></g>`;
+    if(isD)s+=`<text x="${x}" y="${y-28}" text-anchor="middle" font-size="13" fill="var(--bad)">down</text>`;
+    if(tag[n])s+=`<g><rect x="${x-70}" y="${y+26}" width="140" height="24" rx="6" fill="var(--ink)"/><text x="${x}" y="${y+43}" text-anchor="middle" font-size="12" fill="var(--bg)">${tag[n]}</text></g>`}
+  s+=`<g font-size="12" fill="var(--mut)"><circle cx="400" cy="362" r="5" fill="var(--wifi)"/><text x="410" y="366">WiFi</text><circle cx="460" cy="362" r="5" fill="var(--lora)"/><text x="470" y="366">LoRa</text></g>`;
+  return s}
+/* ===== slide engine ===== */
+const slides=$$('.slide');let cur=0,step=0;
+const H={};  // per-slide hooks: render(step)
+const maxStep=el=>Math.max(0,...$$('[data-s]',el).map(e=>+e.dataset.s));
+function show(){
+  slides.forEach((s,i)=>s.classList.toggle('on',i===cur));
+  const el=slides[cur];$$('[data-s]',el).forEach(e=>e.classList.toggle('show',+e.dataset.s<=step));
+  if(H[el.id])H[el.id](step);
+  $('#cnt').textContent=`${cur+1} / ${slides.length}`;
+  $('#prog i').style.width=((cur+(maxStep(el)?step/maxStep(el):1))/(slides.length)*100)+'%';
+  try{history.replaceState(null,'','#'+(cur+1)+(step?'.'+step:''))}catch(e){}
+}
+function hookMax(el){return H[el.id]&&H[el.id].max||0}
+function total(el){return Math.max(maxStep(el),hookMax(el))}
+function next(){const el=slides[cur];if(step<total(el)){step++}else if(cur<slides.length-1){cur++;step=0}show()}
+function prev(){if(step>0){step--}else if(cur>0){cur--;step=total(slides[cur])}show()}
+function go(i,s=0){cur=Math.max(0,Math.min(slides.length-1,i));step=s;show()}
+function fit(){const k=Math.min(innerWidth/1280,(innerHeight-46)/720);const st=$('#stage');st.style.transform=`scale(${k})`;st.style.marginTop=`-${46/2}px`}
+addEventListener('resize',fit);
+addEventListener('keydown',e=>{if(e.target.closest('input'))return;
+  if(['ArrowRight','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();next()}
+  else if(['ArrowLeft','PageUp','Backspace'].includes(e.key)){e.preventDefault();prev()}
+  else if(e.key==='Home')go(0);else if(e.key==='End')go(slides.length-1);
+  else if(e.key==='o'||e.key==='O'||e.key==='Escape')toggleOv();
+  else if(e.key==='f'||e.key==='F')fs();else if(e.key==='t'||e.key==='T')theme()});
+function toggleOv(){$('#ov').classList.toggle('on')}
+function fs(){try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}}
+function theme(){const r=document.documentElement,d=matchMedia('(prefers-color-scheme:dark)').matches;const cur=r.dataset.theme||(d?'dark':'light');r.dataset.theme=cur==='dark'?'light':'dark'}
+$('#bNext').onclick=next;$('#bPrev').onclick=prev;$('#bOv').onclick=toggleOv;$('#bFs').onclick=fs;$('#bTh').onclick=theme;
+// click on empty stage advances; swipe
+$('#stage').addEventListener('click',e=>{if(e.target.closest('button,input,label,.pk,svg,table'))return;next()});
+let tx=null;addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
+addEventListener('touchend',e=>{if(tx==null)return;const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>50)d<0?next():prev();tx=null});
+$('#ovg').innerHTML=slides.map((s,i)=>`<button data-i="${i}"><span>${String(i+1).padStart(2,'0')}</span>${s.dataset.title}</button>`).join('');
+$('#ovg').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b){toggleOv();go(+b.dataset.i)}});
+
+/* ===== slide 2: radios ===== */
+(()=>{const R=[['WiFi',240,1000,'wifi'],['BLE',130,1000,'ble'],['LoRa',28,5.47,'lora']];
+ $('#radioTbl').innerHTML=`<tr><th>Radio</th><th>Current (mA)</th><th class="m">Rate</th></tr>`+R.map(([n,i,r,c])=>`<tr><td><b style="color:var(--${c})">${n}</b></td><td style="width:50%"><div class="row" style="align-items:center;gap:10px"><div class="bar" style="flex:1"><i style="width:${i/240*100}%;background:var(--${c})"></i></div><span class="mono" style="width:40px">${i}</span></div></td><td class="m">${r>=1000?'1 Mbps':r+' kbps'}</td></tr>`).join('');})();
+/* ===== slide 3: weights ===== */
+(()=>{const f=(id,w)=>{$(id).innerHTML=['Energy','Cost','Speed'].map((n,i)=>`<div class="row" style="align-items:center;gap:12px;margin-bottom:8px"><span style="width:70px;font-size:16px">${n}</span><div class="bar" style="flex:1"><i style="width:${w[i]*100}%"></i></div><b class="mono" style="width:34px">${w[i]}</b></div>`).join('')};f('#wSurv',RVW[0]);f('#wAlarm',RVW[1])})();
+/* ===== slide 4: map ===== */
+H['s-net']=s=>{$('#m-net').innerHTML=mapSVG({hot:s>=3?['N3-SW','N1-N3']:s===2?['N4-N5']:[]})};H['s-net'].max=3;
+/* ===== slide 6: counters stay static ===== */
+/* ===== slide 7: piggyback ===== */
+const PIG=[
+ ['Idle','Every node holds its best road in its route matrix. N4’s road to the LoRa base is <span class="mono">15 · 1 · 20 · 1</span>.'],
+ ['1 · N4 sends data','N4 sends a reading to the LoRa base. It <b>copies its own best road into the packet header</b>. No extra message.'],
+ ['2 · Neighbours overhear','Radio is a broadcast: N5 and N2 hear the packet even though it is not for them. They read the header.'],
+ ['3 · N5 composes','N5 adds its link cost to the road it heard: <span class="mono">15+15 · 1+1 · min(20,20) · 1+1</span> = <b class="mono">30 · 2 · 20 · 2</b>. Stored in its route matrix.'],
+ ['4 · And if N4 is silent?','N4 sends a <b>control packet</b> with empty data just to repeat its roads, so N5 never loses it.']];
+H['s-pig']=s=>{const o={hot:[],ring:[],tag:{}};
+ if(s===1||s===2||s===3)o.hot=['N4-SL'];if(s===1)o.tag.N4='15·1·20·1';if(s===2){o.ring=['N5','N2'];o.tag.N4='15·1·20·1'}
+ if(s===3){o.ring=['N5'];o.tag.N5='30·2·20·2'}if(s===4){o.ring=['N4'];o.hot=['N4-N5']}
+ $('#m-pig').innerHTML=mapSVG(o);const p=PIG[Math.min(s,4)];$('#pigTxt').innerHTML=`<h3>${p[0]}</h3><p>${p[1]}</p>`};H['s-pig'].max=4;
+/* ===== slide 11: decision lab ===== */
+const CAND={N3:[['Direct, weak WiFi → SW',[140,5,120,1],'wifi'],['Via N1 (LoRa, then WiFi)',[75,6,20,2],'lora']],N4:[['Direct WiFi → SW',[60,5,200,1],'wifi'],['Direct LoRa → SL',[15,1,20,1],'lora']]};
+let dn='N3',du=0;
+function drawDec(){const w=RVW[du],cs=CAND[dn].map(([n,m,c])=>({n,m,c,r:rN(m,w),s:score(m,w)}));const best=Math.max(...cs.map(x=>x.s));
+ $('#decTbl').innerHTML=`<tr><th>Candidate road</th><th class="m">E · C · R · hops</th><th class="m">normalised (E · C · R)</th><th>score C</th></tr>`+cs.map(x=>`<tr style="${x.s===best?'':'opacity:.65'}"><td><span class="chip ${x.c}">${x.c==='wifi'?'WiFi':'LoRa'}</span> ${x.n}</td><td class="m">${x.m.join(' · ')}</td><td class="m">${x.r.slice(0,3).map(v=>v.toFixed(2)).join(' · ')}</td><td style="width:230px"><div class="row" style="align-items:center;gap:8px"><div class="bar" style="flex:1"><i style="width:${x.s*100}%"></i></div><b class="mono">${x.s.toFixed(3)}</b></div></td></tr>`).join('');
+ const win=cs.find(x=>x.s===best);$('#decFlag').className='flag ok';$('#decFlag').innerHTML=`Weights ${w.slice(0,3).join(' / ')} → <b style="margin:0 6px">${win.n}</b> wins.`}
+H['s-dec']=()=>drawDec();
+$('#s-dec').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.n){dn=b.dataset.n;$$('[data-n]').forEach(x=>x.classList.toggle('on',x===b))}if(b.dataset.u!=null){du=+b.dataset.u;$$('[data-u]').forEach(x=>x.classList.toggle('on',x===b))}drawDec()});
+/* ===== slide 12: rank reversal ===== */
+const RT=[{id:'A',v:[12,1,120]},{id:'B',v:[49,6,174]},{id:'C',v:[75,1,72]},{id:'D',v:[140,87,200]}];
+const TB=[10,1,255],COST=[1,1,0];let tw=[.6,.3,.1],on={A:1,B:1,C:1,D:1},prevO={C:null,R:null};
+function classic(rs,w){const nr=[0,1,2].map(j=>Math.sqrt(rs.reduce((s,r)=>s+r.v[j]**2,0)));const V=rs.map(r=>r.v.map((x,j)=>w[j]*x/nr[j]));
+ const best=[0,1,2].map(j=>(COST[j]?Math.min:Math.max)(...V.map(v=>v[j]))),worst=[0,1,2].map(j=>(COST[j]?Math.max:Math.min)(...V.map(v=>v[j])));
+ return rs.map((r,i)=>{const dp=Math.hypot(...V[i].map((x,j)=>x-best[j])),dm=Math.hypot(...V[i].map((x,j)=>x-worst[j]));return{id:r.id,s:dp+dm?dm/(dp+dm):0}})}
+function bounded(rs,w){return rs.map(r=>{const rr=r.v.map((x,j)=>{x=Math.max(x,1);return COST[j]?TB[j]/x:Math.min(1,x/TB[j])});const v=rr.map((x,j)=>w[j]*x);const dp=Math.hypot(...v.map((x,j)=>w[j]-x)),dm=Math.hypot(...v);return{id:r.id,s:dp+dm?dm/(dp+dm):0}})}
+const order=a=>[...a].sort((x,y)=>y.s-x.s).map(x=>x.id);
+function drawRR(trig){const rs=RT.filter(r=>on[r.id]),c=classic(rs,tw),b=bounded(rs,tw);
+ $('#rrTbl').innerHTML=`<tr><th>Road</th><th class="m">Energy</th><th class="m">Cost</th><th class="m">Speed</th><th>Use it?</th></tr>`+RT.map(r=>`<tr style="${on[r.id]?'':'opacity:.4'}"><td><b>${r.id}</b></td><td class="m">${r.v[0]}</td><td class="m">${r.v[1]}</td><td class="m">${r.v[2]}</td><td><input type="checkbox" data-r="${r.id}" ${on[r.id]?'checked':''} aria-label="Include road ${r.id}" style="width:20px;height:20px"></td></tr>`).join('');
+ const oc=order(c),or=order(b),li=(o,sc)=>o.map((id,i)=>`<div class="row" style="font-size:20px"><b style="width:30px;color:var(--acc)">${i+1}</b> Road ${id}<span class="grow"></span><span class="mono" style="color:var(--mut)">${sc.find(x=>x.id===id).s.toFixed(3)}</span></div>`).join('');
+ $('#rkC').innerHTML=li(oc,c);$('#rkR').innerHTML=li(or,b);
+ const chk=(k,o,el)=>{const p=prevO[k];let msg='Untick a road to test stability.',cls='';
+  if(trig&&p){const cm=o.filter(x=>p.includes(x)),pc=p.filter(x=>o.includes(x));const sw=[];for(let i=0;i<cm.length;i++)for(let j=i+1;j<cm.length;j++)if(pc.indexOf(cm[i])>pc.indexOf(cm[j]))sw.push(cm[i]+' and '+cm[j]);
+   if(sw.length){msg=`Rank reversal: ${sw[0]} swapped, though neither changed.`;cls='bad'}else{msg='Order of the others unchanged.';cls='ok'}}
+  el.textContent=msg;el.className='flag '+cls;prevO[k]=o};
+ chk('C',oc,$('#flC'));chk('R',or,$('#flR'))}
+H['s-rr']=()=>drawRR(false);
+$('#rrTbl').addEventListener('change',e=>{const r=e.target.dataset.r;if(!r)return;if(RT.filter(x=>on[x.id]).length<=2&&!e.target.checked){e.target.checked=true;return}on[r]=e.target.checked?1:0;drawRR(true)});
+/* ===== slide 13: packet ===== */
+function crc8(bytes){let c=0;for(const b of bytes){c^=b;for(let i=0;i<8;i++)c=(c&0x80)?((c<<1)^0x07)&0xFF:(c<<1)&0xFF}return c}
+const FL=[['Network id','2 B · shared by the whole RODENT network; foreign packets are ignored','var(--mut)'],['Source','2 B · the node transmitting this hop','var(--wifi)'],['Next hop','2 B · who must relay or accept it (0xB001 = WiFi base)','var(--lora)'],['Length','1 B · number of data bytes','var(--ble)'],['Requirements id','1 B · message type, so every relay applies the same weights','var(--bad)'],['Sender’s best road','4 B · energy, cost, rate, hops: what neighbours overhear and learn','var(--acc)'],['Payload','7 B · origin (2), sequence (2), kind (1), temperature ×100 (2)','var(--ink)'],['CRC-8','1 B · checksum, polynomial x⁸+x²+x+1, over all previous bytes','var(--mut)']];
+function pkParts(){const t=Math.round(18.5*100)&0xFFFF;const p=[[0x0A,0x0A],[0,4],[0xB0,0x01],[7],[0],[60,5,200,1],[0,5,0,12,0,t>>8,t&255]];p.push([crc8(p.flat())]);return p}
+H['s-pkt']=()=>{const P=pkParts();$('#pkBytes').innerHTML=P.map((b,i)=>`<span class="pk" data-f="${i}" style="display:inline-flex;gap:4px;padding:4px 8px;border:2px solid ${FL[i][2]};border-radius:8px;color:${FL[i][2]};cursor:pointer">${b.map(x=>x.toString(16).toUpperCase().padStart(2,'0')).join(' ')}</span>`).join('');infoPk(5)};
+function infoPk(i){$('#pkInfo').innerHTML=`<h3 style="color:${FL[i][2]}">${FL[i][0]}</h3><p>${FL[i][1]}</p>`;$$('.pk').forEach(e=>e.style.background=+e.dataset.f===i?'var(--accsoft)':'transparent')}
+$('#pkBytes').addEventListener('mouseover',e=>{const p=e.target.closest('.pk');if(p)infoPk(+p.dataset.f)});
+$('#pkBytes').addEventListener('click',e=>{const p=e.target.closest('.pk');if(p)infoPk(+p.dataset.f)});
+/* ===== slide 14: failure ===== */
+const FC=[['WiFi → SW',[60,5,200,1],'wifi'],['LoRa → SL',[15,1,20,1],'lora']];
+const FS=[
+ {t:'t = 0 s · normal',alive:[1,1],dead:[],deadL:[],note:'Surveillance goes by LoRa (cheap), the alarm by WiFi (fast).'},
+ {t:'t = 0 s · the WiFi base stops',alive:[1,1],dead:['SW'],deadL:[],note:'N4 does not know yet. Alarms sent over WiFi are lost for a few seconds.',lost:1},
+ {t:'t = 7 s · no beacon heard',alive:[0,1],dead:['SW'],deadL:['N4-SW'],note:'The WiFi link is declared dead and its road is removed.'},
+ {t:'t ≈ 7 s · re-decision',alive:[0,1],dead:['SW'],deadL:['N4-SW'],hot:['N4-SL'],note:'The next alarm is ranked again with what is left: LoRa. Slower, but delivered. A WiFi-only protocol keeps losing everything.'}];
+H['s-fail']=s=>{const f=FS[s];$('#fT').textContent=f.t;
+ $('#m-fail').innerHTML=mapSVG({dead:f.dead,deadL:f.deadL,hot:f.hot||[]});
+ $('#fTbl').innerHTML=`<tr><th>Candidate</th><th>Status</th><th class="m">Surveillance</th><th class="m">Alarm</th></tr>`+FC.map(([n,m,c],i)=>{const a=f.alive[i];const sc=u=>a?score(m,RVW[u]).toFixed(2):'–';return `<tr style="${a?'':'opacity:.5'}"><td><span class="chip ${c}">${n}</span></td><td>${a?'alive':'<span class="chip bad">dead</span>'}</td><td class="m">${sc(0)}</td><td class="m">${sc(1)}</td></tr>`}).join('');
+ const pick=u=>{const sc=FC.map((x,i)=>f.alive[i]?score(x[1],RVW[u]):-1);return FC[sc.indexOf(Math.max(...sc))][0]};
+ $('#fFlag').className='flag '+(f.lost?'bad':s===3?'ok':'');$('#fFlag').innerHTML=`<span>${f.note}<br><b>Alarm → ${f.lost?'WiFi (lost)':pick(1)}</b></span>`};H['s-fail'].max=3;
+
+fit();
+const hm=location.hash.match(/#(\d+)(?:\.(\d+))?/);if(hm){cur=Math.min(slides.length-1,Math.max(0,+hm[1]-1));step=Math.min(total(slides[cur]),+(hm[2]||0))}
+show();
+</script>
+</body>
+</html>
